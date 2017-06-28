@@ -12,43 +12,46 @@ function preload(){
     game.load.image('grass:4x1', 'images/grass_4x1.png');
     game.load.image('grass:2x1', 'images/grass_2x1.png');
     game.load.image('grass:1x1', 'images/grass_1x1.png');
-    
     game.load.image('hero','images/hero_stopped.png');
-
 };
 
 function create(){
 	game.add.image(0, 0, 'background');
-	loadLevel(this.game.cache.getJSON('level:1'));
+  loadLevel(this.game.cache.getJSON('level:1'));
 	leftKey = game.input.keyboard.addKey(Phaser.Keyboard.LEFT);
  	rightKey = game.input.keyboard.addKey(Phaser.Keyboard.RIGHT);
-
+   upKey = game.input.keyboard.addKey(Phaser.Keyboard.UP); //add this line
+    upKey.onDown.add(function(){
+    jump();
+    });
 }
 
 function update(){
- 	handleInput();
+ 	handleCollisions();
+  handleInput();
 };
+
 var game = new Phaser.Game(960, 600, Phaser.AUTO, 'game', {init: init, preload: preload, create: create, update: update});
 
 function loadLevel(data){
-	
+  platforms = game.add.group();
 	game.add.image(0, 0, 'background');
 	data.platforms.forEach(spawnPlatform, this);
-    spawnCharacters({hero: data.hero});
-	game.physics.arcade.gravity.y = 1200;
-
+  spawnCharacters({hero: data.hero});
+  game.physics.arcade.gravity.y = 1200;
 };
 function spawnPlatform(platform){
-    game.add.sprite(platform.x, platform.y, platform.image);
-     var sprite = platforms.create(platform.x, platform.y, platform.image);
-     game.physics.enable(hero)
+  game.add.sprite(platform.x, platform.y, platform.image);
+  var sprite = platforms.create(platform.x, platform.y, platform.image);
+  game.physics.enable(sprite);
+  sprite.body.allowGravity = false;
+  sprite.body.immovable=true;
   };
 function spawnCharacters (data){
     hero = game.add.sprite(data.hero.x, data.hero.y, 'hero');
     hero.anchor.set(0.5, 0.5);
-       //Make the main character use the physics engine for movement
     game.physics.enable(hero);
-  
+    hero.body.collideWorldBounds = true;
 };
 function move(direction){
     hero.body.velocity.x = direction * 200;
@@ -70,8 +73,17 @@ function handleInput(){
         move(0);
     }
 };
-
-//Create a game state
-
+function handleCollisions(){
+   game.physics.arcade.collide(hero, platforms);
+};
+function jump(){
+    var canJump = hero.body.touching.down;
+    //Ensures hero is on the ground or on a platform
+    if (canJump) {
+        hero.body.velocity.y = -600;
+    }
+    
+  return canJump;
+}
 
 // create game entities and set up world here
