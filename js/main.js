@@ -1,3 +1,5 @@
+var coinPickupCount = 0;
+
 function init() {
     //Make hero sprite more focused when moving around
     game.renderer.renderSession.roundPixels = true;
@@ -12,13 +14,16 @@ function preload() {
     game.load.image('grass:4x1', 'images/grass_4x1.png');
     game.load.image('grass:2x1', 'images/grass_2x1.png');
     game.load.image('grass:1x1', 'images/grass_1x1.png');
-    game.load.image('hero', 'images/hero_stopped.png');
+    game.load.spritesheet('hero', 'images/hero.png', 36, 42)
     game.load.audio('sfx:jump', 'audio/jump.wav');
     game.load.spritesheet('coin', 'images/coin_animated.png', 22, 22);
     game.load.audio('sfx:coin', 'audio/coin.wav');
     game.load.spritesheet('spider', 'images/spider.png', 42, 32);
     game.load.image('invisible-wall', 'images/invisible_wall.png');
     game.load.audio('sfx:stomp', 'audio/stomp.wav');
+    game.load.image('icon:coin', 'images/coin_icon.png');
+    game.load.image('font:numbers', 'images/numbers.png');
+
 };
 
 function create() {
@@ -26,6 +31,9 @@ function create() {
     sfxJump = game.add.audio('sfx:jump');
      sfxCoin = game.add.audio('sfx:coin');
      sfxStomp = game.add.audio('sfx:stomp');
+     coinIcon = game.make.image(40, 0, 'icon:coin');
+     coinFont = game.make.image('font:numbers');
+     
     loadLevel(this.game.cache.getJSON('level:1'));
     leftKey = game.input.keyboard.addKey(Phaser.Keyboard.LEFT);
     rightKey = game.input.keyboard.addKey(Phaser.Keyboard.RIGHT);
@@ -34,12 +42,25 @@ function create() {
         jump();
         coinSound = game.add.audio('sfx:coin');
     });
+     hud = game.add.group();
+    hud.add(coinIcon);
+    hud.position.set(10, 10);
+     var NUMBERS_STR = "0123456789X ";
+    coinFont = game.add.retroFont('font:numbers', 20, 26, NUMBERS_STR, 6);
+
+   var coinScoreImg = game.make.image(100 + coinIcon.width, coinIcon.height / 2, coinFont);
+    coinScoreImg.anchor.set(1, 0.5);
+    hud.add(coinScoreImg);
 }
 
 function update() {
     handleCollisions();
     handleInput();
     moveSpider();
+    var animationName = getAnimationName();
+    if (hero.animations.name !== animationName) {
+        hero.animations.play(animationName);
+    }
 };
 
 
@@ -74,6 +95,7 @@ function spawnPlatform(platform) {
 function spawnCharacters(data) {
     hero = game.add.sprite(data.hero.x, data.hero.y, 'hero');
     hero.anchor.set(0.5, 0.5);
+
     game.physics.enable(hero);
     hero.body.collideWorldBounds = true;
     data.spiders.forEach(function (spider){
@@ -81,6 +103,10 @@ function spawnCharacters(data) {
         spiders.add(sprite);
         sprite.anchor.set(0.5);
         // animation
+         hero.animations.add('stop', [0]);
+    hero.animations.add('run', [1, 2], 8, true); // 8fps looped
+    hero.animations.add('jump', [3]);
+    hero.animations.add('fall', [4]);
         sprite.animations.add('crawl', [0, 1, 2], 8, true);
         sprite.animations.add('die', [0, 4, 0, 4, 0, 4, 3, 3, 3, 3, 3, 3], 12);
         sprite.animations.play('crawl');
@@ -138,9 +164,13 @@ function spawnCoin(coin) {
     sprite.body.allowGravity = false;
 };
 
+
+
 function onHeroVsCoin(hero, coin){
      sfxCoin.play();
     coin.kill();
+     coinPickupCount++;
+     coinFont.text = `x${coinPickupCount}`;
 };
 
 var game = new Phaser.Game(960, 600, Phaser.AUTO, 'game', {
@@ -201,4 +231,20 @@ function spawnSpider(){
     game.physics.enable(spider);
     spider.body.collideWorldBounds = true;
     spider.body.velocity.x = Spider.speed;
+}
+
+function getAnimationName(){
+    var name = 'stop';
+    // jumping
+    if (hero.body.velocity.y < 0) {
+        name = 'jump';
+    }
+    // falling
+    else if (hero.body.velocity.y >= 0 && !hero.body.touching.down) {
+        name = 'fall';
+    }
+    else if (hero.body.velocity.x !== 0 && hero.body.touching.down) {
+        name = 'run';
+    }
+    return name;
 }
