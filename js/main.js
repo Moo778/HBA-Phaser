@@ -8,7 +8,8 @@ function init() {
 }
 
 function preload() {
-    game.load.image('background', 'images/background.png');
+    game.load.image('background', 'images/mydude.png');
+    game.load.json('level:2', 'data/level02.json');
     game.load.json('level:1', 'data/level01.json');
     game.load.json('level:0', 'data/level00.json');
     game.load.image('ground', 'images/ground.png');
@@ -27,7 +28,7 @@ function preload() {
     game.load.image('icon:coin', 'images/coin_icon.png');
     game.load.image('font:numbers', 'images/numbers.png');
     game.load.spritesheet('door', 'images/door.png', 42, 66);
-    game.load.image('key', 'images/key.png');
+    game.load.image('key', 'images/download.png');
     game.load.audio('sfx:key', 'audio/key.wav');
     game.load.audio('sfx:door', 'audio/door.wav');
     game.load.spritesheet('icon:key', 'images/key_icon.png', 34, 30);
@@ -283,6 +284,7 @@ function spawnKey(x, y) {
     key.anchor.set(0.5, 0.5);
     game.physics.enable(key);
     key.body.allowGravity = false;
+    
 }
 
 function onHeroVsKey(hero, key) {
@@ -293,11 +295,16 @@ function onHeroVsKey(hero, key) {
 
 function onHeroVsDoor(hero, door) {
     sfxDoor.play();
-    if (level === 0) {
+    if (level === 0){
         level = level + 1;
-    } else {
+    } else if(level === 1){
+        level = level + 1;
+    }
+    else{
         level = 0;
     }
     hasKey = false;
     game.state.restart();
 }
+
+
